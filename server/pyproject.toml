@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "server"
+version = "0.1.0"
+description = ""
+authors = ["Dert2 <dert.0.1@yandex.ru>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^4.1.1"
+django-environ = "^0.9.0"
+djangorestframework-simplejwt = "^5.2.0"
+djangorestframework = "^3.14.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
