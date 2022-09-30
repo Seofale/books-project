@@ -2,33 +2,31 @@ from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 
 from .serializers import (BookCreateSerializer, BookRetrieveSerializer,
                           TagRetrieveSerializer, GenreRetrieveSerializer,
                           SubscriptionCreateSerializer, SubscriptionRetrieveSerializer,
-                          BookListSerializer, BookRetrieveForSubUserSerializer)
+                          BookRetrieveForSubUserSerializer)
 from .models import Book, Tag, Genre, Like
-from .permissions import IsHaveSubscriptionOrCantReadBook
 from . import constants
 
 
 class BookViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated, IsHaveSubscriptionOrCantReadBook)
+    permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self):
         if self.action == 'create':
             return BookCreateSerializer
-        # elif self.action == 'retrieve':
-        #     if not self.check_object_permissions(self.request, self.get_object()):
-        #         return BookRetrieveForSubUserSerializer
-        #
-        #     return BookRetrieveSerializer
         elif self.action == 'retrieve':
-            if self.get_object().subscription_type <= self.request.user.subscription.type:
-                return BookRetrieveForSubUserSerializer
-            return BookRetrieveSerializer
+            try:
+                if self.get_object().subscription_type <= self.request.user.subscription.type:
+                    return BookRetrieveForSubUserSerializer
+                return BookRetrieveSerializer
+
+            except ObjectDoesNotExist:  # user don't have any subscription
+                return BookRetrieveSerializer
         elif self.action in ('list', 'likes'):
             return BookRetrieveSerializer
         elif self.action == 'subscribe':
@@ -54,7 +52,7 @@ class BookViewSet(viewsets.ModelViewSet):
                 return self.request.user.subscription
 
             except ObjectDoesNotExist:
-                return {'type': None, 'duration': None, 'start_date': None}
+                return {'type': None, 'duration': None, 'start_date': None, 'days_to_end': None}
 
         return super().get_object()
 
@@ -63,7 +61,7 @@ class BookViewSet(viewsets.ModelViewSet):
         detail=False,
         url_path='subscribe',
     )
-    def make_subscribe(self, request, *args, **kwargs):
+    def subscribe(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
 
     @action(

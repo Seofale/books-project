@@ -108,4 +108,4 @@ class SubscriptionRetrieveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ('type', 'duration', 'start_date')
+        fields = ('type', 'duration', 'start_date', 'days_to_end')

@@ -1,7 +1,9 @@
+from datetime import date
+
 from django.db import models
 
 from .constants import SUBSCRIPTION_TYPES, SUBSCRIPTION_DURATIONS
-from .utils import author_directory_path
+from .utils import author_directory_path, add_months_to_date
 
 
 class Book(models.Model):
@@ -10,7 +12,7 @@ class Book(models.Model):
         verbose_name='Название',
     )
     description = models.TextField(
-        verbose_name='Название',
+        verbose_name='Описание',
     )
     upload = models.FileField(
         upload_to=author_directory_path,
@@ -73,6 +75,10 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.user.username} -- {self.type} ({self.duration})'
+
+    @property
+    def days_to_end(self):
+        return (add_months_to_date(self.start_date, self.duration) - date.today()).days
 
 
 class Tag(models.Model):
