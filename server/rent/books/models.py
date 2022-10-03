@@ -65,9 +65,10 @@ class Subscription(models.Model):
         choices=SUBSCRIPTION_DURATIONS,
     )
     start_date = models.DateField(
-        auto_created=True,
+        auto_now_add=True,
         verbose_name='Дата начала подписки',
     )
+    objects = models.Manager()
 
     class Meta:
         verbose_name = 'Подписка на книги'

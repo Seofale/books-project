@@ -1,22 +1,28 @@
+from typing import Type, Union
+
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, generics, status
+from rest_framework import viewsets, generics, status, serializers, permissions
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.request import Request
 from rest_framework.response import Response
+from django.db.models.query import QuerySet
 
 from .serializers import (BookCreateSerializer, BookRetrieveSerializer,
                           TagRetrieveSerializer, GenreRetrieveSerializer,
                           SubscriptionCreateSerializer, SubscriptionRetrieveSerializer,
                           BookRetrieveForSubUserSerializer)
-from .models import Book, Tag, Genre, Like
+from .models import Book, Tag, Genre, Like, Subscription
 from . import constants
+from .permissions import IsAuthorOrCantDeleteAndUpdate
 
 
 class BookViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAuthorOrCantDeleteAndUpdate)
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[serializers.Serializer]:
         if self.action == 'create':
             return BookCreateSerializer
         elif self.action == 'retrieve':
@@ -27,32 +33,40 @@ class BookViewSet(viewsets.ModelViewSet):
 
             except ObjectDoesNotExist:  # user don't have any subscription
                 return BookRetrieveSerializer
-        elif self.action in ('list', 'likes'):
+        elif self.action in ('list', 'likes', 'top_by_likes'):
             return BookRetrieveSerializer
         elif self.action == 'subscribe':
             return SubscriptionCreateSerializer
         elif self.action == 'subscription':
             return SubscriptionRetrieveSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         if self.action == 'likes':
             return Book.objects.filter(likes__user=self.request.user)
+        elif self.action == 'top_by_likes':
+            return Book.objects.annotate(
+                likes_count=Sum('likes')
+            ).order_by('-likes_count')[:10]
+        elif self.action == 'top_by_author_subscriptions':
+            return Book.objects.annotate(
+                likes_count=Sum('likes')
+            ).order_by('-likes_count')[:10]
 
         return Book.objects.all()
 
-    def get_permissions(self):
+    def get_permissions(self) -> permissions.BasePermission:
         if self.action == 'list':
             self.permission_classes = (AllowAny,)
 
         return super().get_permissions()
 
-    def get_object(self):
+    def get_object(self) -> Union[Book, Subscription]:
         if self.action == 'subscription':
             try:
                 return self.request.user.subscription
 
             except ObjectDoesNotExist:
-                return {'type': None, 'duration': None, 'start_date': None, 'days_to_end': None}
+                return constants.NO_SUBSCRIPTION
 
         return super().get_object()
 
@@ -61,7 +75,7 @@ class BookViewSet(viewsets.ModelViewSet):
         detail=False,
         url_path='subscribe',
     )
-    def subscribe(self, request, *args, **kwargs):
+    def subscribe(self, request: Request, *args, **kwargs) -> Response:
         return super().create(request, *args, **kwargs)
 
     @action(
@@ -69,7 +83,7 @@ class BookViewSet(viewsets.ModelViewSet):
         detail=False,
         url_path='subscription',
     )
-    def subscription(self, request, *args, **kwargs):
+    def subscription(self, request: Request, *args, **kwargs) -> Response:
         return super().retrieve(request, *args, **kwargs)
 
     @action(
@@ -77,7 +91,7 @@ class BookViewSet(viewsets.ModelViewSet):
         methods=('post', 'delete'),
         url_path='like',
     )
-    def like(self, request, pk=None):
+    def like(self, request: Request, pk: int = None) -> Response:
         book = get_object_or_404(Book, pk=pk)
 
         like_exists = Like.objects.filter(user=request.user, book=book).exists()
@@ -100,7 +114,15 @@ class BookViewSet(viewsets.ModelViewSet):
         detail=False,
         url_path='likes',
     )
-    def likes(self, request, *args, **kwargs):
+    def likes(self, request: Request, *args, **kwargs) -> Response:
+        return super().list(request, *args, **kwargs)
+
+    @action(
+        methods=('get',),
+        detail=False,
+        url_path='top-10-by-likes',
+    )
+    def top_by_likes(self, request: Request, *args, **kwargs) -> Response:
         return super().list(request, *args, **kwargs)
 
 

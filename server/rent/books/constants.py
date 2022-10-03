@@ -9,6 +9,14 @@ SUBSCRIPTION_DURATIONS = [
         (6, '6 Месяцев'),
         (12, 'Год'),
 ]
+
 ALREADY_LIKED = 'Вы уже лайкнули эту книгу'
+
 NOT_LIKED = 'Вы еще не лайкнули эту запись'
 
+NO_SUBSCRIPTION = {
+                    'type': None,
+                    'duration': None,
+                    'start_date': None,
+                    'days_to_end': None
+}
