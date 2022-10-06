@@ -42,12 +42,10 @@ class BookViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self) -> QuerySet:
         if self.action == 'likes':
-            return Book.objects.filter(likes__user=self.request.user)
+            return Book.objects.filter(
+                likes__user=self.request.user
+            ).order_by('-likes__liked_time')
         elif self.action == 'top_by_likes':
-            return Book.objects.annotate(
-                likes_count=Sum('likes')
-            ).order_by('-likes_count')[:10]
-        elif self.action == 'top_by_author_subscriptions':
             return Book.objects.annotate(
                 likes_count=Sum('likes')
             ).order_by('-likes_count')[:10]
