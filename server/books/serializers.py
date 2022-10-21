@@ -17,7 +17,7 @@ class BookCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ('title', 'description', 'tags', 'genres')
+        fields = ('title', 'description', 'tags', 'genres', 'subscription_type')
 
     def create(self, validated_data: dict) -> Book:
         validated_data['author'] = self.context['request'].user
@@ -34,7 +34,7 @@ class BookRetrieveSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Book
-        fields = ('id', 'title', 'description', 'tags', 'genres', 'is_me_liked', 'likes_count')
+        fields = ('id', 'title', 'description', 'tags', 'genres', 'is_me_liked', 'likes_count', 'subscription_type')
 
     def get_is_me_liked(self, obj: Book) -> bool:
         user = self.context.get('request').user

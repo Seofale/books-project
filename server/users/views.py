@@ -1,7 +1,11 @@
-from rest_framework import viewsets, status
+from typing import Type, Optional
+
+from django.db.models import QuerySet
+from rest_framework import viewsets, status, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from .serializers import UserCreateSerializer, UserRetrieveSerializer
@@ -13,13 +17,13 @@ class UsersViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     http_method_names = ('get', 'post', 'head', 'delete')
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[serializers.Serializer]:
         if self.action == 'create':
             return UserCreateSerializer
 
         return UserRetrieveSerializer
 
-    def get_queryset(self, user=None):
+    def get_queryset(self, user=None) -> QuerySet:
         if self.action == 'follows':
             return User.objects.filter(followers__user=user)
 
@@ -29,12 +33,12 @@ class UsersViewSet(viewsets.ModelViewSet):
         return User.objects.all()
 
     def get_permissions(self):
-        if self.action in ('retrieve', 'list'):
+        if self.action in ('retrieve', 'list', 'create'):
             self.permission_classes = (AllowAny,)
 
         return super().get_permissions()
 
-    def get_object(self):
+    def get_object(self) -> User:
         if self.action == 'me':
             return self.request.user
 
@@ -45,7 +49,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=('get',),
         url_path='me',
     )
-    def me(self, request, *args, **kwargs):
+    def me(self, request: Request, *args, **kwargs) -> Response:
         return super().retrieve(request, *args, **kwargs)
 
     @action(
@@ -53,7 +57,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=('get',),
         url_path='follows',
     )
-    def follows(self, request, pk=None):
+    def follows(self, request: Request, pk: Optional[int] = None) -> Response:
         return self.get_follows_and_followers(pk)
 
     @action(
@@ -61,7 +65,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=('get',),
         url_path='followers',
     )
-    def followers(self, request, pk=None):
+    def followers(self, request: Request, pk: Optional[int] = None) -> Response:
         return self.get_follows_and_followers(pk)
 
     @action(
@@ -69,7 +73,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=('post', 'delete'),
         url_path='follow',
     )
-    def follow(self, request, pk=None):
+    def follow(self, request: Request, pk: Optional[int] = None) -> Response:
         user = request.user
         author = get_object_or_404(User, pk=pk)
 
@@ -88,7 +92,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
         return Response({'message': constants.NOT_SUBSCRIBE})
 
-    def get_follows_and_followers(self, pk):
+    def get_follows_and_followers(self, pk: int):
         user = get_object_or_404(User, pk=pk)
 
         if not user.is_private or user == self.request.user:

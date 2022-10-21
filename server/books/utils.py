@@ -2,7 +2,7 @@ import calendar
 import datetime
 
 
-def author_directory_path(instance, filename):
+def author_directory_path(instance, filename) -> str:
     return f'uploads/author_{instance.author.id}/{filename}'
 
 

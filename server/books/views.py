@@ -31,7 +31,7 @@ class BookViewSet(viewsets.ModelViewSet):
                     return BookRetrieveForSubUserSerializer
                 return BookRetrieveSerializer
 
-            except ObjectDoesNotExist:  # user don't have any subscription
+            except ObjectDoesNotExist:
                 return BookRetrieveSerializer
         elif self.action in ('list', 'likes', 'top_by_likes'):
             return BookRetrieveSerializer
@@ -58,7 +58,7 @@ class BookViewSet(viewsets.ModelViewSet):
 
         return super().get_permissions()
 
-    def get_object(self) -> Union[Book, Subscription]:
+    def get_object(self) -> Union[Book, Subscription, dict]:
         if self.action == 'subscription':
             try:
                 return self.request.user.subscription

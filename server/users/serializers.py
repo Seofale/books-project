@@ -22,7 +22,7 @@ class UserRetrieveSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'username', 'email', 'is_me_following')
 
-    def get_is_me_following(self, obj):
+    def get_is_me_following(self, obj: User) -> bool:
         user = self.context.get('request').user
         if user.is_authenticated:
             return obj.followers.filter(user=user).exists()
